@@ -1,0 +1,15 @@
+name: WIP emulator tests
+on:
+  push:
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lua 5.2
+        run: sudo apt-get update && sudo apt-get install -y lua5.2
+      - name: Syntax check
+        run: find src tests -name '*.lua' -print0 | xargs -0 -n1 lua5.2 -e 'assert(loadfile(arg[1]))'
+      - name: Run WIP feature suite
+        run: lua5.2 tests/wip_features.lua
