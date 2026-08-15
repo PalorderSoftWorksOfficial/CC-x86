@@ -2,116 +2,107 @@
 
 A WIP 32-bit x86 emulator written entirely in Lua for CC:Tweaked.
 
-CC:X86 is deliberately built as a real emulator project instead of a single compressed script. CPU state, instruction decoding, firmware, debugging, tests, and future devices have separate modules so contributors can work on one layer without rewriting the rest.
+The project is intentionally split into small modules so the CPU, memory system, instruction decoder, firmware, virtual hardware, loaders, and debugging tools can evolve independently.
 
-## Why this project exists
+## The goal
 
-The interesting goal is to make a real 32-bit machine exist inside a CC:Tweaked computer and then use it for increasingly ambitious systems experiments.
+CC:X86 is being built as a real small-machine project rather than a giant opcode table. The long-term target is an IA-32 compatible virtual machine capable of booting real 32-bit software inside CC:Tweaked.
 
-The long-term targets are:
+The first serious guest target is a small operating-system environment that can eventually become a CloverOS x86 port or a dedicated CloverOS laboratory image.
 
-- a useful IA-32 interpreter
-- an inspectable firmware ABI
-- virtual hardware and a text/framebuffer device model
-- a tiny guest boot monitor
-- an educational 32-bit operating-system target
-- measurable performance work
+## Requirements
 
-## CC:Tweaked
+- CC:Tweaked
+- A ComputerCraft computer or advanced computer
+- A binary containing supported 32-bit x86 instructions
 
-CC:X86 is designed for the Lua environment exposed by CC:Tweaked. It uses `bit32` and the CC:Tweaked `fs` API rather than desktop-only Lua facilities.
+CC:X86 targets the Lua environment supplied by CC:Tweaked. It uses `bit32` for integer bit operations and CC:Tweaked's filesystem APIs for loading guest programs.
 
 ## Install
 
-Copy the repository into the computer filesystem. `/ccx86` is a convenient location.
+Copy the repository into the computer's filesystem. The project can be placed at `/ccx86`.
 
 ## Run
+
+Run a raw binary with:
 
 ```text
 x86 examples/add.bin
 ```
 
-Useful development modes:
+Debug execution:
 
 ```text
 x86 examples/add.bin --debug
-x86 examples/add.bin --trace
-x86 examples/add.bin --trace --trace-limit=64
-x86 examples/add.bin --profile
-x86 examples/add.bin --memory=32
 ```
 
-Raw binaries are loaded at `0x00100000`. The stack is initialized near the end of configured guest RAM.
+The binary is loaded at `0x00100000`. Execution starts there and the initial stack pointer is `0x00700000`.
 
 ## Architecture
 
 | Module | Responsibility |
 | --- | --- |
-| `RegisterFile` | IA-32 general-purpose registers, EIP, and guest stack helpers |
-| `Flags` | EFLAGS state and arithmetic/condition semantics |
-| `Memory` | Sparse little-endian byte-addressable guest RAM |
-| `Decoder` | Opcode immediates plus ModR/M and SIB decoding |
+| `RegisterFile` | IA-32 general-purpose registers and EIP |
+| `Flags` | EFLAGS state and arithmetic helpers |
+| `Memory` | Sparse byte-addressable guest RAM |
+| `Decoder` | Opcode, ModR/M and SIB decoding |
 | `CPU` | Fetch/decode/execute loop |
-| `InstructionSet` | x86 instruction semantics and opcode expansion point |
-| `OpcodeMetadata` | Human-readable names for tracing |
-| `RawLoader` | Flat binary loading through CC:Tweaked `fs` |
-| `BIOS` | Emulator-specific `INT 0x80` services |
-| `Profiler` | Opcode frequency and execution statistics |
-| `Tracer` | Compact execution trace |
-| `Bus` | Boundary for future emulated hardware |
-| `ConsoleDevice` | Terminal-backed character device |
-| `Monitor` | Human-readable CPU state display |
+| `InstructionSet` | Core opcode handlers |
+| `Extensions` | Experimental and rapidly growing instruction groups |
+| `Bus` | Guest port I/O routing |
+| `Terminal` | Host terminal device on port `0xE9` |
+| `BIOS` | Emulator-specific `int 0x80` services |
+| `RawLoader` | Flat binary loading |
+| `Monitor` | Debug output |
 | `Emulator` | Top-level runtime coordination |
 
 ## Current instructions
 
-The WIP core currently includes NOP, HLT, MOV immediate/register/memory forms, LEA, ADD, SUB, XOR, AND, OR, CMP, TEST, INC, DEC, PUSH, POP, CALL, RET, JMP, short and near Jcc, INT, CLI, STI, CLD, STD, and a small `0F` extension set including `IMUL`.
+The WIP core includes NOP, HLT, MOV immediate/register/memory forms, arithmetic and logical instructions, CMP, TEST, INC, DEC, PUSH, POP, CALL, RET, JMP, short and near conditional branches, LEA, software interrupts, flag-control instructions, initial IMUL, MOVZX, CPUID, RDTSC, and port I/O.
 
-Coverage is intentionally incomplete. Unsupported instructions fail loudly with the opcode and guest EIP so they can become focused contribution tasks.
+The implementation is deliberately incomplete. Unsupported instructions fail loudly with the opcode and instruction pointer instead of silently producing incorrect guest state.
 
-## BIOS services
+## Virtual hardware
 
-`INT 0x80` uses `EAX` as the service number. See [`docs/BIOS.md`](docs/BIOS.md).
+Port `0xE9` is a terminal/debug port. This makes tiny guest programs easy to write and gives future operating-system work a deterministic serial-style output path.
 
-| EAX | Service |
-| --- | --- |
-| `0` | Get CC:X86 BIOS version |
-| `1` | Print signed integer from EBX |
-| `2` | Write low byte of EBX |
-| `3` | Print a zero-terminated guest string from EBX |
-| `4` | Get UTC milliseconds |
-| `6` | Halt the guest |
+`CPUID 0x40000000` identifies the virtual machine as `CLOVEROS-X86`. This is reserved for future CloverOS x86 integration and is intentionally independent from the normal x86 instruction semantics.
 
-These are emulator firmware services, not Linux syscall compatibility.
-
-## Testing
-
-The repository includes small guest-level and CPU-level regressions. CI compiles every Lua file with Lua 5.2 and runs `tests/run.lua`.
-
-For local CC:Tweaked testing:
-
-```text
-lua tests/run.lua
-```
+See `docs/HARDWARE.md` for the current guest ABI.
 
 ## CloverOS
 
-CloverOS is the companion CC:Tweaked operating-system project from PalorderSoftWorksOfficial. CC:X86 is the low-level CPU/hardware laboratory; CloverOS is the user-facing environment that can install, launch, visualize, and showcase those experiments.
+CloverOS and CC:X86 are companion projects.
 
-- CloverOS: https://github.com/PalorderSoftWorksOfficial/CloverOS
-- CC:X86: https://github.com/PalorderSoftWorksOfficial/CC-x86
-- CloverOS installer: `wget run https://endpoint.palorderhosting.net/netinstall.lua`
+CloverOS is the user-facing operating-system environment for CC:Tweaked.
 
-The projects are intentionally independent: CC:X86 remains useful without CloverOS, while CloverOS can adopt emulator demos without embedding the CPU implementation into the OS.
+CC:X86 is the low-level CPU, firmware, memory, virtual-device, and debugger laboratory.
 
-## Contributor workflow
+The intended direction is to let CloverOS gain an x86 execution target while keeping CC:X86 useful as a standalone emulator project for experimenting with CPUs and virtual hardware.
 
-Read [`CONTRIBUTING.md`](CONTRIBUTING.md), [`docs/MAINTAINERS.md`](docs/MAINTAINERS.md), and [`docs/ROADMAP.md`](docs/ROADMAP.md). A good first change is one missing opcode plus one regression test.
+CloverOS repository: `PalorderSoftWorksOfficial/CloverOS`
 
-## Demo direction
+## Development
 
-The project is aiming for demos that are easy to reproduce inside Minecraft: tiny firmware programs, a visible CPU trace, an instruction profiler, virtual devices, and eventually a real 32-bit hobby OS running under the emulator. See [`docs/DEMO_IDEAS.md`](docs/DEMO_IDEAS.md) and [`docs/REDDIT_PITCH.md`](docs/REDDIT_PITCH.md).
+The project uses small modules and explicit interfaces so contributors can work on one subsystem without rewriting the emulator.
+
+Tests are separated by subsystem. The GitHub Actions workflow performs Lua 5.2 syntax checks and executes the emulator regression suite.
+
+## Roadmap
+
+1. Finish ModR/M and SIB edge cases.
+2. Complete byte and word register operations.
+3. Expand the 80386 integer instruction set.
+4. Add REP-prefixed string operations.
+5. Add descriptor tables and protected mode.
+6. Add interrupt and exception delivery.
+7. Add paging.
+8. Add disk devices and BIOS boot services.
+9. Add ELF32 loading.
+10. Build a conformance suite from real assembled instruction sequences.
+11. Build a tiny bootable 32-bit guest image.
+12. Prototype a CloverOS x86 boot environment.
 
 ## Status
 
-WIP. Correctness and extensibility come before performance. The roadmap explicitly includes decode caching and optional translation/JIT experiments after the ISA and device model are substantially complete.
+WIP. Correctness, observability, and extensibility come before raw emulation speed.
