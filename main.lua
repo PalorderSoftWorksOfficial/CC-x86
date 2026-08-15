@@ -2,20 +2,39 @@ local Emulator = require("src.x86.core.emulator")
 
 local args = { ... }
 local path = args[1]
-local debug = false
+local options = {
+    debug = false,
+    profiler = false,
+    memory_size = 16 * 1024 * 1024,
+    trace = { enabled = false, limit = 256 },
+}
 
 for i = 2, #args do
-    if args[i] == "--debug" then
-        debug = true
+    local argument = args[i]
+    if argument == "--debug" then
+        options.debug = true
+    elseif argument == "--profile" then
+        options.profiler = true
+    elseif argument == "--trace" then
+        options.trace.enabled = true
+    elseif argument:match("^--trace%-limit=") then
+        options.trace.limit = tonumber(argument:match("^--trace%-limit=(%d+)$")) or options.trace.limit
+    elseif argument:match("^--memory=") then
+        local megabytes = tonumber(argument:match("^--memory=(%d+)$"))
+        if megabytes then
+            options.memory_size = megabytes * 1024 * 1024
+        end
+    else
+        error("unknown option: " .. argument)
     end
 end
 
 if not path then
     print("CC:X86")
-    print("usage: x86 <binary> [--debug]")
+    print("usage: x86 <binary> [--debug] [--trace] [--trace-limit=N] [--profile] [--memory=N]")
     return
 end
 
-local emulator = Emulator.new({ debug = debug })
+local emulator = Emulator.new(options)
 emulator:load_raw(path, 0x00100000)
 emulator:run()
