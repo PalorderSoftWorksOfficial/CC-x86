@@ -1,0 +1,11 @@
+local CPU = require("src.x86.core.cpu")
+
+local cpu = CPU.new({ memory_size = 0x10000 })
+cpu.memory:load(0x1000, string.char(0x8B, 0x44, 0x88, 0x04, 0xF4))
+cpu.memory:write_u32(0x2007, 0x12345678)
+cpu:reset(0x1000, 0x7000)
+cpu.registers:set(0, 0x2000)
+cpu.registers:set(1, 3)
+cpu:run()
+assert(cpu.registers:get(0) == 0x12345678, "SIB addressing should resolve correctly")
+print("CC:X86 decoder tests passed")
