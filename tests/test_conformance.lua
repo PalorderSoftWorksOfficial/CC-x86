@@ -48,13 +48,14 @@ run({
 end)
 
 run({
-    0xB8, 0x00, 0x00, 0x00, 0x40,
+    0xB8, 0x00, 0x00, 0x00, 0x00,
     0x0F, 0xA2,
     0xF4,
 }, nil, function(cpu)
-    assert(cpu.registers:get(1) == 0x564F4C43, "CPUID must identify CLOV")
-    assert(cpu.registers:get(3) == 0x534F5245, "CPUID must identify EROS")
-    assert(cpu.registers:get(2) == 0x3638582D, "CPUID must identify -X86")
+    assert(cpu.registers:get(0) == 1, "CPUID leaf zero must expose leaf one")
+    assert(cpu.registers:get(1) == 0x38384343)
+    assert(cpu.registers:get(2) == 0x524F4C52)
+    assert(cpu.registers:get(3) == 0x2D363858)
 end)
 
 print("CC:X86 conformance tests passed")
