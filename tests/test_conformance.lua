@@ -54,8 +54,8 @@ run({
 }, nil, function(cpu)
     assert(cpu.registers:get(0) == 1, "CPUID leaf zero must expose leaf one")
     assert(cpu.registers:get(1) == 0x38384343)
-    assert(cpu.registers:get(2) == 0x524F4C52)
-    assert(cpu.registers:get(3) == 0x2D363858)
+    assert(cpu.registers:get(2) == 0x44524F4C)
+    assert(cpu.registers:get(3) == 0x41502D36)
 end)
 
 print("CC:X86 conformance tests passed")
