@@ -36,7 +36,7 @@ local function cpuid(cpu)
  local leaf=cpu.registers:get(0)
  if leaf==0 then
   cpu.registers:set(0,1)
-  vendor(cpu,"CCX8 6-PA LORD")
+  vendor(cpu,"CCX86-PALORD")
  elseif leaf==1 then
   cpu.registers:set(0,0x00000300)
   cpu.registers:set(1,0)
@@ -121,7 +121,6 @@ function Extensions.install(cpu)
  end
  h[0xE4]=function(c)
   local port=c.decoder:fetch_u8()
-  c.registers:set(0,Register8.get(c.registers,0))
   Register8.set(c.registers,0,c.bus:read(port,8))
  end
  h[0xE5]=function(c)
