@@ -70,6 +70,14 @@ Port `0xE9` is a terminal/debug port. This makes tiny guest programs easy to wri
 
 See `docs/HARDWARE.md` for the current guest ABI.
 
+## Conformance tests
+
+The regression suite now includes instruction-level checks for INC and DEC carry preservation and for the emulator's standard and CloverOS CPUID identities. Run the suite with:
+
+```text
+lua5.2 tests/run.lua
+```
+
 ## CloverOS
 
 CloverOS and CC:X86 are companion projects.
@@ -99,7 +107,7 @@ Tests are separated by subsystem. The GitHub Actions workflow performs Lua 5.2 s
 7. Add paging.
 8. Add disk devices and BIOS boot services.
 9. Add ELF32 loading.
-10. Build a conformance suite from real assembled instruction sequences.
+10. Extend the conformance suite to cover every implemented encoding.
 11. Build a tiny bootable 32-bit guest image.
 12. Prototype a CloverOS x86 boot environment.
 
