@@ -43,7 +43,10 @@ while true do
   if op=="db" then
    local values=line:sub(3):gmatch("[^,]+")
    for _ in values do pc=pc+1 end
-  elseif op=="nop" or op=="ret" or op=="hlt" or op=="int" then pc=pc+1+(op=="int" and 1 or 0)
+  elseif op=="nop" or op=="ret" or op=="hlt" or op=="cpuid" then
+   pc=pc+(op=="cpuid" and 2 or 1)
+  elseif op=="int" then
+   pc=pc+2
   elseif op=="push" or op=="mov" or op=="add" or op=="sub" or op=="cmp" then
    if op=="push" then pc=pc+5
    elseif op=="mov" then pc=pc+5
@@ -77,6 +80,7 @@ for line_no,line in ipairs(source) do
   elseif op=="nop" then out[#out+1]=0x90;pc=pc+1
   elseif op=="hlt" then out[#out+1]=0xF4;pc=pc+1
   elseif op=="ret" then out[#out+1]=0xC3;pc=pc+1
+  elseif op=="cpuid" then out[#out+1]=0x0F;out[#out+1]=0xA2;pc=pc+2
   elseif op=="int" then
    local n=number(rest)
    if not n then fail(line_no,"bad interrupt") end
