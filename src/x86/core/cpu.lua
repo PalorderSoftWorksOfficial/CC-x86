@@ -3,13 +3,15 @@ local Flags = require("src.x86.core.flags")
 local Memory = require("src.x86.core.memory")
 local Decoder = require("src.x86.core.decoder")
 local InstructionSet = require("src.x86.cpu.instructions")
+local Extensions = require("src.x86.cpu.extensions")
 local BIOS = require("src.x86.io.bios")
+local Bus = require("src.x86.hardware.bus")
+local ConsoleDevice = require("src.x86.hardware.console")
 local U32 = require("src.x86.util.u32")
 local Profiler = require("src.x86.debug.profiler")
 local Tracer = require("src.x86.debug.tracer")
 
 ---@class CPU
----Implements the fetch, decode, execute loop for the guest processor.
 local CPU = {}
 CPU.__index = CPU
 
@@ -25,8 +27,13 @@ function CPU.new(options)
     self.profiler = options.profiler and Profiler.new() or nil
     self.tracer = Tracer.new(self, options.trace or {})
     self.decoder = Decoder.new(self)
+    self.bus = Bus.new()
+    self.console = ConsoleDevice.new()
+    self.bus:attach("console", self.console)
+    self.bus:attach_port(0xE9, self.console)
     self.bios = BIOS.new(self)
     self.instructions = InstructionSet.new(self)
+    Extensions.install(self)
     return self
 end
 
@@ -38,13 +45,13 @@ function CPU:reset(entry, stack)
     self.flags = Flags.new()
     self.halted = false
     self.cycles = 0
+    self.bus:reset()
     if self.profiler then
         self.profiler = Profiler.new()
     end
     self.tracer.count = 0
 end
 
----Executes exactly one guest instruction.
 function CPU:step()
     if self.halted then
         return false
@@ -61,7 +68,6 @@ function CPU:step()
     return true
 end
 
----Runs guest instructions until HLT or an optional cycle limit.
 function CPU:run(limit, monitor)
     local max = limit or math.huge
     while not self.halted and self.cycles < max do
