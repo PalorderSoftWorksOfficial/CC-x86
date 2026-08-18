@@ -44,7 +44,7 @@ local function cpuid(cpu)
   cpu.registers:set(3,1)
  elseif leaf==0x40000000 then
   cpu.registers:set(0,0x40000001)
-  vendor(cpu,"CLOV ERCC X86")
+  vendor(cpu,"CLOVEROS-X86")
  elseif leaf==0x40000001 then
   cpu.registers:set(0,1)
   cpu.registers:set(1,0)
